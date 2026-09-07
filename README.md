@@ -224,7 +224,7 @@ overridden per-provider in `.env` (`GROQ_MODEL`, `ANTHROPIC_MODEL`, `OPENAI_MODE
 
 ```js
 const MODELS = {
-  groq: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+  groq: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
   anthropic: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
   openai: process.env.OPENAI_MODEL || 'llama3.2:3b',
 };
