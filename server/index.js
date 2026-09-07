@@ -26,7 +26,10 @@ const scenarios = require('./scenarios');
 const LLM_PROVIDER = (process.env.LLM_PROVIDER || 'groq').toLowerCase();
 
 const MODELS = {
-  groq: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+  // Groq deprecated & shut down llama-3.3-70b-versatile on 2026-08-16;
+  // openai/gpt-oss-120b is Groq's recommended replacement. See
+  // https://console.groq.com/docs/deprecations
+  groq: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
   anthropic: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
   openai: process.env.OPENAI_MODEL || 'llama3.2:3b', // e.g. Ollama model name
 };
