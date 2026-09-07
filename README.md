@@ -43,6 +43,21 @@ The app is **provider-agnostic** — pick one via `LLM_PROVIDER` in `.env`:
 | **Ollama** (local) | Free, offline | None | Install https://ollama.com, run `ollama pull llama3.2:3b`, set `LLM_PROVIDER=openai`. |
 | **Anthropic** | Paid | Paid key | Set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`. |
 
+`LLM_PROVIDER` is the default used by both routes. To run each route on a
+different provider, set `CHAT_PROVIDER` and/or `FEEDBACK_PROVIDER` — each
+falls back to `LLM_PROVIDER` when unset. For example, to run the patient
+roleplay (`/api/chat`) against a local Ollama instance while keeping feedback
+generation (`/api/feedback`) on Groq:
+
+```
+LLM_PROVIDER=groq
+CHAT_PROVIDER=openai
+# FEEDBACK_PROVIDER left unset → falls back to LLM_PROVIDER (groq)
+```
+
+Leaving `CHAT_PROVIDER` and `FEEDBACK_PROVIDER` unset is the default and
+behaves exactly as before — both routes use `LLM_PROVIDER`.
+
 Edit `.env` accordingly (see the comments in `.env.example`).
 
 ### 4. Install dependencies
@@ -137,7 +152,9 @@ Key scripts (root `package.json`):
 | `npm run build` | Installs client + server deps and builds the React bundle |
 | `npm start` | Runs the Express server on `process.env.PORT` (serves API + frontend) |
 
-A `/healthz` endpoint returns `200 OK` for the platform's health check, and
+A `/healthz` endpoint returns `200 OK` with a small JSON status payload
+(current chat/feedback providers and models, and which API keys are present —
+never the key values themselves) for the platform's health check, and
 `render.yaml` is a ready-made Blueprint.
 
 ### Step-by-step
@@ -180,7 +197,10 @@ A `/healthz` endpoint returns `200 OK` for the platform's health check, and
 ```bash
 # Replace with your real Render URL
 curl -i https://YOUR-APP.onrender.com/healthz
-# expect: HTTP/1.1 200 OK   and body: OK
+# expect: HTTP/1.1 200 OK   and a JSON body like:
+# {"status":"OK","chatProvider":"groq","feedbackProvider":"groq",
+#  "chatModel":"llama-3.3-70b-versatile","feedbackModel":"llama-3.3-70b-versatile",
+#  "keyPresent":{"GROQ_API_KEY":true,"ANTHROPIC_API_KEY":false,"OPENAI_API_KEY":false}}
 ```
 
 Manual test checklist in a browser:
