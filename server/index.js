@@ -15,15 +15,25 @@ const scenarios = require('./scenarios');
 // ─────────────────────────────────────────────────────────────────────────────
 // PROVIDER CONFIG
 //
-// LLM_PROVIDER selects which backend to use (set in .env). Default: "groq".
+// LLM_PROVIDER selects which backend to use by default (set in .env).
+// Default: "groq".
 //   • "groq"      → free cloud, OpenAI-compatible  (needs GROQ_API_KEY)
 //   • "anthropic" → Claude API                     (needs ANTHROPIC_API_KEY)
 //   • "openai"    → any OpenAI-compatible endpoint  (Ollama, OpenRouter, etc.)
+//
+// CHAT_PROVIDER and FEEDBACK_PROVIDER independently override the provider
+// used for /api/chat and /api/feedback respectively, so (for example) the
+// patient roleplay can run against a local Ollama instance while feedback
+// generation stays on a cloud provider. Either can be left unset, in which
+// case that route falls back to LLM_PROVIDER — leaving both unset reproduces
+// the previous single-provider behaviour exactly.
 //
 // To change the model, edit the MODELS map below. Find current Groq models at
 // https://console.groq.com/docs/models — update the string if one is retired.
 // ─────────────────────────────────────────────────────────────────────────────
 const LLM_PROVIDER = (process.env.LLM_PROVIDER || 'groq').toLowerCase();
+const CHAT_PROVIDER = (process.env.CHAT_PROVIDER || LLM_PROVIDER).toLowerCase();
+const FEEDBACK_PROVIDER = (process.env.FEEDBACK_PROVIDER || LLM_PROVIDER).toLowerCase();
 
 const MODELS = {
   // Groq deprecated & shut down llama-3.3-70b-versatile on 2026-08-16;
@@ -42,12 +52,15 @@ const OPENAI_BASE_URLS = {
 
 // ── Unified generation helper ────────────────────────────────────────────────
 // Returns the assistant's text. Throws on error (handled by routes).
-async function generate({ system, messages, maxTokens, temperature }) {
-  if (LLM_PROVIDER === 'anthropic') {
+// `provider` is explicit rather than read off a module-level constant so
+// each route can select its own provider (see CHAT_PROVIDER / FEEDBACK_PROVIDER
+// above).
+async function generate(provider, { system, messages, maxTokens, temperature }) {
+  if (provider === 'anthropic') {
     return generateAnthropic({ system, messages, maxTokens, temperature });
   }
   // groq + openai are both OpenAI-compatible
-  return generateOpenAICompatible({ system, messages, maxTokens, temperature });
+  return generateOpenAICompatible(provider, { system, messages, maxTokens, temperature });
 }
 
 let anthropicClient = null;
@@ -66,8 +79,8 @@ async function generateAnthropic({ system, messages, maxTokens, temperature }) {
   return response.content[0].text;
 }
 
-async function generateOpenAICompatible({ system, messages, maxTokens, temperature }) {
-  const baseURL = OPENAI_BASE_URLS[LLM_PROVIDER] || OPENAI_BASE_URLS.openai;
+async function generateOpenAICompatible(provider, { system, messages, maxTokens, temperature }) {
+  const baseURL = OPENAI_BASE_URLS[provider] || OPENAI_BASE_URLS.openai;
   const apiKey =
     process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || 'not-needed';
 
@@ -81,7 +94,7 @@ async function generateOpenAICompatible({ system, messages, maxTokens, temperatu
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: MODELS[LLM_PROVIDER] || MODELS.openai,
+      model: MODELS[provider] || MODELS.openai,
       messages: fullMessages,
       max_tokens: maxTokens,
       temperature,
@@ -103,10 +116,10 @@ async function generateOpenAICompatible({ system, messages, maxTokens, temperatu
   return data.choices?.[0]?.message?.content ?? '';
 }
 
-// Which key (if any) this provider needs, for the startup check.
-function requiredKeyName() {
-  if (LLM_PROVIDER === 'anthropic') return 'ANTHROPIC_API_KEY';
-  if (LLM_PROVIDER === 'groq') return 'GROQ_API_KEY';
+// Which key (if any) a provider needs, for the startup check and /healthz.
+function requiredKeyName(provider) {
+  if (provider === 'anthropic') return 'ANTHROPIC_API_KEY';
+  if (provider === 'groq') return 'GROQ_API_KEY';
   return null; // local OpenAI-compatible (Ollama) needs none
 }
 
@@ -116,7 +129,25 @@ app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
 // ── Health check for the hosting platform ────────────────────────────────────
-app.get('/healthz', (req, res) => res.status(200).send('OK'));
+// Always returns HTTP 200 (hosting-platform health checks key off the status
+// code, not the body) with a JSON payload describing the active per-route
+// provider config. keyPresent reports only booleans — never the key values
+// themselves.
+app.get('/healthz', (req, res) => {
+  const keyPresent = {
+    GROQ_API_KEY: Boolean(process.env.GROQ_API_KEY),
+    ANTHROPIC_API_KEY: Boolean(process.env.ANTHROPIC_API_KEY),
+    OPENAI_API_KEY: Boolean(process.env.OPENAI_API_KEY),
+  };
+  res.status(200).json({
+    status: 'OK',
+    chatProvider: CHAT_PROVIDER,
+    feedbackProvider: FEEDBACK_PROVIDER,
+    chatModel: MODELS[CHAT_PROVIDER] || MODELS.openai,
+    feedbackModel: MODELS[FEEDBACK_PROVIDER] || MODELS.openai,
+    keyPresent,
+  });
+});
 
 // ── Patient mode: forward student messages to the patient roleplay ───────────
 app.post('/api/chat', async (req, res) => {
@@ -132,7 +163,7 @@ app.post('/api/chat', async (req, res) => {
   const scenario = scenarios[scenarioId];
 
   try {
-    const content = await generate({
+    const content = await generate(CHAT_PROVIDER, {
       system: scenario.patientSystemPrompt,
       messages,
       maxTokens: 500,
@@ -215,7 +246,7 @@ Do not invent specific drug names, doses, or clinical guidelines.`;
     .join('\n\n');
 
   try {
-    const content = await generate({
+    const content = await generate(FEEDBACK_PROVIDER, {
       system: feedbackSystemPrompt,
       messages: [
         {
@@ -250,9 +281,12 @@ if (fs.existsSync(clientDist)) {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Cancer Simulator API running on http://localhost:${PORT}`);
-  console.log(`Provider: ${LLM_PROVIDER}  |  Model: ${MODELS[LLM_PROVIDER] || MODELS.openai}`);
-  const keyName = requiredKeyName();
-  if (keyName && !process.env[keyName]) {
-    console.warn(`WARNING: ${keyName} is not set. Add it to .env (see .env.example).`);
+  console.log(`Chat provider:     ${CHAT_PROVIDER}  |  Model: ${MODELS[CHAT_PROVIDER] || MODELS.openai}`);
+  console.log(`Feedback provider: ${FEEDBACK_PROVIDER}  |  Model: ${MODELS[FEEDBACK_PROVIDER] || MODELS.openai}`);
+  for (const provider of new Set([CHAT_PROVIDER, FEEDBACK_PROVIDER])) {
+    const keyName = requiredKeyName(provider);
+    if (keyName && !process.env[keyName]) {
+      console.warn(`WARNING: ${keyName} is not set (needed for provider "${provider}"). Add it to .env (see .env.example).`);
+    }
   }
 });
