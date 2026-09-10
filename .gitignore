@@ -7,6 +7,11 @@ node_modules/
 .env.local
 *.env
 
+# Stage 4 answer key — contains true diagnoses, likelihood ratios and harm
+# weights. If this reaches git history the exercise is permanently defeated
+# for anyone who can read the repo. Deployed via a Render secret file instead.
+server/stage4/answers.private.js
+
 # Build output
 client/dist/
 
