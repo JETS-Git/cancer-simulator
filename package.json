@@ -1,5 +1,5 @@
 {
-  "name": "cancer-survivor-simulator",
+  "name": "clinical-reasoning-simulator",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -10,7 +10,8 @@
     "share": "concurrently -n server,client,tunnel -c blue,green,magenta \"npm run server\" \"npm run client\" \"npm run tunnel\"",
     "build": "npm install --include=dev --prefix client && npm install --prefix server && npm run build --prefix client",
     "start": "node server/index.js",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "notices": "node scripts/generate-notices.js"
   },
   "engines": {
     "node": ">=18"

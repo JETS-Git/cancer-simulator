@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import ScenarioSelector from './components/ScenarioSelector.jsx';
 import ChatInterface from './components/ChatInterface.jsx';
 import FeedbackDisplay from './components/FeedbackDisplay.jsx';
+import Stage4Session from './components/Stage4Session.jsx';
+import Notices from './components/Notices.jsx';
+import { SCENARIOS_BY_ID } from './scenarioCatalogue.js';
 
-// View states: 'select' | 'chat' | 'feedback'
+// View states: 'select' | 'chat' | 'feedback' | 'stage4' | 'notices'
 
 export default function App() {
   const [view, setView] = useState('select');
@@ -11,10 +14,18 @@ export default function App() {
   const [transcript, setTranscript] = useState([]);
   const [showAbout, setShowAbout] = useState(false);
 
+  // Signed stage-4 completion tokens, keyed by the scenario that was
+  // completed. Issued by /api/stage4/commit and forwarded, opaque, to
+  // /api/stage4/session when starting a scenario that names a prerequisite.
+  // The server verifies the signature itself — this map only drives which
+  // cards the selector shows as unlocked; it grants nothing on its own.
+  const [stage4Tokens, setStage4Tokens] = useState({});
+
   function handleStart(id) {
     setScenarioId(id);
     setTranscript([]);
-    setView('chat');
+    const scenario = SCENARIOS_BY_ID[id];
+    setView(scenario?.kind === 'stage4' ? 'stage4' : 'chat');
   }
 
   function handleRequestFeedback(messages) {
@@ -22,11 +33,17 @@ export default function App() {
     setView('feedback');
   }
 
+  function handleStage4Complete(completedScenarioId, completionToken) {
+    setStage4Tokens(prev => ({ ...prev, [completedScenarioId]: completionToken }));
+  }
+
   function handleRestart() {
     setScenarioId(null);
     setTranscript([]);
     setView('select');
   }
+
+  const currentScenario = scenarioId ? SCENARIOS_BY_ID[scenarioId] : null;
 
   return (
     <div className="app-shell">
@@ -39,9 +56,9 @@ export default function App() {
       <header className="app-header">
         <div className="header-icon" aria-hidden="true">🩺</div>
         <div className="header-titles">
-          <h1>Cancer Survivor Conversation Simulator</h1>
+          <h1>Clinical Reasoning Simulator</h1>
           <div className="subtitle">
-            Supportive-care communication practice for pre-registration nursing students
+            Multi-stage clinical reasoning practice for pre-registration nursing students
           </div>
         </div>
         <button
@@ -58,7 +75,7 @@ export default function App() {
             <p className="landing-attribution">
               Prototype by Phillip Johnson — feedback welcome.
             </p>
-            <ScenarioSelector onStart={handleStart} />
+            <ScenarioSelector onStart={handleStart} completionTokens={stage4Tokens} />
           </>
         )}
 
@@ -81,6 +98,25 @@ export default function App() {
             transcript={transcript}
             onRestart={handleRestart}
           />
+        )}
+
+        {view === 'stage4' && (
+          <Stage4Session
+            key={scenarioId}
+            scenarioId={scenarioId}
+            completionToken={currentScenario?.prerequisite ? stage4Tokens[currentScenario.prerequisite] : undefined}
+            onComplete={handleStage4Complete}
+            onExit={handleRestart}
+          />
+        )}
+
+        {view === 'notices' && (
+          <>
+            <Notices />
+            <button className="btn-new-session" onClick={handleRestart}>
+              ← Back to scenarios
+            </button>
+          </>
         )}
       </main>
 
@@ -107,11 +143,19 @@ export default function App() {
             <p>
               This is an early educational prototype exploring whether AI-supported
               conversation practice can help pre-registration nurses build
-              supportive-care communication skills with cancer survivors. Patients
-              are fictional. The open research question — whether a tool like this
-              is safe, valid, and useful for learning — would be the focus of
-              formal evaluation. Built by Phillip Johnson (RN, Nurse Educator).
+              clinical reasoning and supportive-care communication skills across a
+              staged curriculum. Patients are fictional. The open research question
+              — whether a tool like this is safe, valid, and useful for learning —
+              would be the focus of formal evaluation. Built by Phillip Johnson
+              (RN, Nurse Educator).
             </p>
+            <button
+              className="about-link"
+              style={{ marginTop: 12 }}
+              onClick={() => { setShowAbout(false); setView('notices'); }}
+            >
+              View notices, attribution &amp; support information →
+            </button>
           </div>
         </div>
       )}

@@ -11,6 +11,9 @@ const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const scenarios = require('./scenarios');
+const { promptsByStage } = require('./feedback-prompts');
+const { scenarios: stage4Scenarios } = require('./scenarios.stage4');
+const { createStage4Router } = require('./stage4/routes');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROVIDER CONFIG
@@ -141,7 +144,9 @@ app.post('/api/chat', async (req, res) => {
     res.json({ content });
   } catch (err) {
     console.error('[/api/chat]', err.message);
-    res.status(500).json({ error: `API error: ${err.message}` });
+    res.status(503).json({
+      error: 'The simulation service is temporarily unavailable. Please try again shortly.',
+    });
   }
 });
 
@@ -158,57 +163,24 @@ app.post('/api/feedback', async (req, res) => {
 
   const scenario = scenarios[scenarioId];
 
-  const feedbackSystemPrompt = `You are an expert nurse educator reviewing a pre-registration nursing student's practice conversation.
-Scenario: ${scenario.title}
-${scenario.description}
+  // Stage is a property of the scenario. The three original scenarios
+  // predate the field and default to 2 — but they also carry it explicitly
+  // now (see scenarios.js), so this default only protects future additions.
+  const stage = scenario.stage || 2;
 
-The student played the role of the nurse (labelled "Nurse" in the transcript). Evaluate ONLY the nurse's messages.
+  if (stage === 4) {
+    return res.status(400).json({
+      error: 'Stage 4 debriefs are served by /api/stage4/debrief.',
+    });
+  }
 
-Return structured feedback in Markdown using exactly this format:
+  const buildPrompt = promptsByStage[stage];
+  if (!buildPrompt) {
+    console.error('[/api/feedback] no prompt for stage', stage, scenarioId);
+    return res.status(500).json({ error: 'Feedback is unavailable for this scenario.' });
+  }
 
-## Feedback Report
-
-### Rubric Assessment
-
-Score each domain **Emerging**, **Developing**, or **Proficient** and write 2–3 sentences with direct quotes from the student's messages where possible.
-
-**1. Rapport & therapeutic communication**
-...
-
-**2. Active listening & empathy**
-...
-
-**3. Person-centred approach** (did the student elicit the patient's own priorities?)
-...
-
-**4. Clear, appropriate information-giving**
-...
-
-**5. Holistic assessment** (physical AND psychosocial dimensions)
-...
-
-**6. Survivorship-specific awareness** (fear of recurrence, late effects, supportive-care needs)
-...
-
-**7. Safety-netting / recognising and escalating red flags**
-...
-
----
-
-### 3 Specific Strengths
-
-1. ...
-2. ...
-3. ...
-
-### 3 Specific Actions for Next Time
-
-1. ...
-2. ...
-3. ...
-
-Be encouraging but honest. This is formative feedback to help the student grow.
-Do not invent specific drug names, doses, or clinical guidelines.`;
+  const feedbackSystemPrompt = buildPrompt(scenario);
 
   const transcriptText = transcript
     .map(m => `${m.role === 'user' ? 'Nurse' : 'Patient'}: ${m.content}`)
@@ -223,15 +195,27 @@ Do not invent specific drug names, doses, or clinical guidelines.`;
           content: `Here is the full conversation transcript:\n\n${transcriptText}\n\nPlease provide structured feedback.`,
         },
       ],
-      maxTokens: 2000,
-      temperature: 0.4, // more consistent for assessment
+      maxTokens: 3000, // was 2000 — seven rubric domains plus six list items already ran close
+      // Assessment output should be reproducible. Stage 4 explains supplied
+      // figures and must not embellish them, so it runs colder still. (Stage
+      // 4 never reaches this handler today — it early-returns above — but
+      // the ternary is kept so this call is correct if that ever changes.)
+      temperature: scenario.stage === 4 ? 0.1 : 0.3,
     });
     res.json({ content });
   } catch (err) {
     console.error('[/api/feedback]', err.message);
-    res.status(500).json({ error: `API error: ${err.message}` });
+    res.status(503).json({
+      error: 'The feedback service is temporarily unavailable. Please try again shortly.',
+    });
   }
 });
+
+// ── Stage 4: confidence allocation under deterioration ───────────────────────
+// createStage4Router fails fast (process.exit(1)) at require time if either
+// the private answer key or STAGE4_SESSION_SECRET is missing. See
+// server/stage4/routes.js for both checks.
+app.use('/api/stage4', createStage4Router({ scenarios: stage4Scenarios, generate }));
 
 // ── Serve the built React app (production / single-service deploy) ───────────
 // In local dev the Vite server serves the frontend on :5173 and proxies /api
@@ -247,12 +231,18 @@ if (fs.existsSync(clientDist)) {
   });
 }
 
+// Fail fast: a missing key is a deployment fault, not a runtime surprise.
+const keyName = requiredKeyName();
+if (keyName && !process.env[keyName]) {
+  console.error(
+    `FATAL: ${keyName} is not set for provider "${LLM_PROVIDER}". ` +
+    `Set it in the environment (see .env.example) and restart. Refusing to start.`
+  );
+  process.exit(1);
+}
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Cancer Simulator API running on http://localhost:${PORT}`);
   console.log(`Provider: ${LLM_PROVIDER}  |  Model: ${MODELS[LLM_PROVIDER] || MODELS.openai}`);
-  const keyName = requiredKeyName();
-  if (keyName && !process.env[keyName]) {
-    console.warn(`WARNING: ${keyName} is not set. Add it to .env (see .env.example).`);
-  }
 });

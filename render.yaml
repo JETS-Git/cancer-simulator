@@ -1,8 +1,14 @@
 # Render Blueprint — single web service that builds the React app and serves it
 # (plus the API) from one Node process. See https://render.com/docs/blueprint-spec
+#
+# The stage 4 answer key is gitignored, so it is NOT in this checkout. Add it
+# as a Secret File in the Render dashboard (Environment → Secret Files),
+# filename answers.private.js, contents = the whole of
+# server/stage4/answers.private.js. Render mounts secret files under
+# /etc/secrets/, which is where STAGE4_ANSWERS_PATH below points.
 services:
   - type: web
-    name: cancer-survivor-simulator
+    name: clinical-reasoning-simulator
     runtime: node
     plan: free
     buildCommand: npm install && npm run build
@@ -15,3 +21,10 @@ services:
       # Set this as a SECRET in the Render dashboard (do not commit it).
       - key: GROQ_API_KEY
         sync: false
+      # Generate with:
+      #   node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+      # Set as a SECRET in the Render dashboard (do not commit it).
+      - key: STAGE4_SESSION_SECRET
+        sync: false
+      - key: STAGE4_ANSWERS_PATH
+        value: /etc/secrets/answers.private.js

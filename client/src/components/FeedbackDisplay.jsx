@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-
-const SCENARIO_LABELS = {
-  breast_cancer: 'Sarah — Breast cancer, 8 months post-chemo',
-  colorectal: 'David — Colorectal cancer, 6 months post-surgery',
-  lymphoma: "Aisha — Lymphoma, 1 year post-treatment",
-};
+import { scenarioLabel } from '../scenarioCatalogue.js';
 
 export default function FeedbackDisplay({ scenarioId, transcript, onRestart }) {
   const [content, setContent] = useState(null);
@@ -43,7 +38,7 @@ export default function FeedbackDisplay({ scenarioId, transcript, onRestart }) {
       <div className="feedback-header">
         <div>
           <h2>Educator Feedback</h2>
-          <p>{SCENARIO_LABELS[scenarioId]}</p>
+          <p>{scenarioLabel(scenarioId)}</p>
         </div>
         <button className="btn-restart" onClick={onRestart}>
           Start new session

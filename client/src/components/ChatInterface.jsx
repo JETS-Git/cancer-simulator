@@ -1,12 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-
-const SCENARIO_LABELS = {
-  breast_cancer: 'Sarah — Breast cancer, 8 months post-chemo',
-  colorectal: 'David — Colorectal cancer, 6 months post-surgery',
-  lymphoma: "Aisha — Lymphoma, 1 year post-treatment",
-};
+import { SCENARIOS_BY_ID, scenarioLabel } from '../scenarioCatalogue.js';
 
 export default function ChatInterface({ scenarioId, onRequestFeedback }) {
+  const isPeer = SCENARIOS_BY_ID[scenarioId]?.personaType === 'peer';
+  const otherLabel = isPeer ? 'Peer' : 'Patient';
   const [messages, setMessages] = useState([]);   // { role: 'user'|'assistant', content: string }
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -73,8 +70,8 @@ export default function ChatInterface({ scenarioId, onRequestFeedback }) {
       {/* Header bar */}
       <div className="chat-header">
         <div className="chat-header-info">
-          <h2>Patient Consultation</h2>
-          <div className="scenario-label">{SCENARIO_LABELS[scenarioId]}</div>
+          <h2>{isPeer ? 'Peer Conversation' : 'Patient Consultation'}</h2>
+          <div className="scenario-label">{scenarioLabel(scenarioId)}</div>
         </div>
         <button
           className="btn-feedback"
@@ -90,15 +87,15 @@ export default function ChatInterface({ scenarioId, onRequestFeedback }) {
       <div className="message-list" ref={listRef} aria-live="polite" aria-label="Conversation">
         {messages.map((m, i) => (
           <div key={i} className={`message ${m.role === 'user' ? 'nurse' : 'patient'}`}>
-            <div className="message-label">{m.role === 'user' ? 'Nurse (you)' : 'Patient'}</div>
+            <div className="message-label">{m.role === 'user' ? 'Nurse (you)' : otherLabel}</div>
             <div className="message-bubble">{m.content}</div>
           </div>
         ))}
 
         {loading && (
           <div className="message patient">
-            <div className="message-label">Patient</div>
-            <div className="typing-indicator" aria-label="Patient is typing">
+            <div className="message-label">{otherLabel}</div>
+            <div className="typing-indicator" aria-label={`${otherLabel} is typing`}>
               <span /><span /><span />
             </div>
           </div>

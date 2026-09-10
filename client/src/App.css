@@ -629,6 +629,290 @@ body {
   to { transform: rotate(360deg); }
 }
 
+/* ── Scenario stage groups ──────────────────────────────────────────────── */
+.scenario-stage-group { margin-bottom: 24px; }
+.scenario-stage-group:last-of-type { margin-bottom: 0; }
+
+.scenario-stage-heading {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--teal-700);
+  margin-bottom: 10px;
+}
+
+.scenario-card.locked {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.scenario-card.locked:hover {
+  border-color: var(--slate-300);
+  background: none;
+  box-shadow: none;
+}
+
+.scenario-card__locked {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--slate-500);
+}
+
+/* ── Stage 4 — confidence allocation under deterioration ────────────────── */
+.stage4-intro, .stage4 {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stage4 h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--slate-900);
+}
+
+.stage4 .error, .stage4-intro .error {
+  color: var(--red-600);
+  font-weight: 600;
+}
+
+.bound-brief h3 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--teal-700);
+  margin-bottom: 8px;
+}
+
+.bound-brief__body {
+  background: var(--slate-50);
+  border: 1px solid var(--slate-300);
+  border-radius: 8px;
+  padding: 16px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--slate-900);
+}
+
+.differential textarea,
+.commit textarea,
+.commit-now, .commit-who, .commit-why {
+  width: 100%;
+  border: 1.5px solid var(--slate-300);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  margin: 8px 0;
+  resize: vertical;
+}
+
+.differential .hint {
+  font-size: 12px;
+  color: var(--slate-500);
+}
+
+.allocator__framing, .allocator__prompt {
+  font-size: 14px;
+  color: var(--slate-700);
+}
+
+.allocator__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.allocator__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--slate-50);
+  border: 1px solid var(--slate-300);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.allocator__row label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--slate-900);
+}
+
+.allocator__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.allocator__controls button {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1.5px solid var(--slate-300);
+  background: var(--white);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.allocator__controls input,
+.commit input[type="number"] {
+  width: 60px;
+  text-align: center;
+  border: 1.5px solid var(--slate-300);
+  border-radius: 6px;
+  padding: 6px 4px;
+  font-size: 14px;
+}
+
+.allocator__remaining {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate-700);
+}
+
+.commit__prompt {
+  background: var(--slate-50);
+  border: 1px solid var(--slate-300);
+  border-radius: 8px;
+  padding: 14px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.commit label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate-900);
+  margin-top: 6px;
+}
+
+.commit__confirm {
+  background: var(--amber-50);
+  border: 1.5px solid var(--amber-200);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stage4 button, .stage4-intro button {
+  align-self: flex-start;
+  background: var(--teal-600);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.stage4 button:hover:not(:disabled), .stage4-intro button:hover:not(:disabled) {
+  background: var(--teal-700);
+}
+
+.stage4 button:disabled, .stage4-intro button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.allocator__controls button {
+  background: var(--white);
+  color: var(--slate-900);
+  padding: 0;
+}
+
+/* ── Stage 4 debrief ────────────────────────────────────────────────────── */
+.debrief h3 { font-size: 15px; font-weight: 700; color: var(--slate-900); margin-top: 8px; }
+
+.debrief__trajectory {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.debrief__trajectory th, .debrief__trajectory td {
+  border: 1px solid var(--slate-300);
+  padding: 8px 10px;
+  text-align: right;
+}
+
+.debrief__trajectory th[scope="row"] { text-align: left; font-weight: 600; }
+.debrief__trajectory thead th { background: var(--slate-100); text-align: right; }
+.debrief__trajectory thead th:first-child { text-align: left; }
+
+.debrief__truth { font-size: 14px; color: var(--slate-900); }
+
+.debrief__divergence, .debrief__cromwell {
+  background: var(--amber-50);
+  border-left: 3px solid var(--amber-600);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--slate-900);
+}
+
+.debrief__illustrative {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--slate-500);
+}
+
+.debrief__narrative {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--slate-700);
+  white-space: pre-wrap;
+}
+
+.debrief__pending { color: var(--slate-500); font-style: italic; }
+
+/* ── Notices ────────────────────────────────────────────────────────────── */
+.notices {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notices h2 { font-size: 20px; font-weight: 700; color: var(--slate-900); margin-bottom: 8px; }
+.notices h3 { font-size: 14px; font-weight: 700; color: var(--teal-700); margin-top: 18px; }
+.notices p { font-size: 14px; line-height: 1.6; color: var(--slate-700); }
+
+.notices__licences {
+  background: var(--slate-50);
+  border: 1px solid var(--slate-300);
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 11px;
+  line-height: 1.5;
+  max-height: 320px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+.notices__footer {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--slate-500);
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .app-content { padding: 16px 12px; }
@@ -637,4 +921,7 @@ body {
   .chat-header { flex-direction: column; align-items: flex-start; }
   .btn-feedback { width: 100%; text-align: center; }
   .message { max-width: 94%; }
+  .stage4, .stage4-intro, .notices { padding: 18px 16px; }
+  .allocator__row { flex-direction: column; align-items: flex-start; }
+  .debrief__trajectory { display: block; overflow-x: auto; }
 }

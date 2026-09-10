@@ -1,9 +1,18 @@
 // Each scenario contains the patient's hidden brief and a full system prompt
 // for the patient roleplay mode.
+//
+// `stage` defaults to 2 for these three in feedback-prompts.js if left unset,
+// but it is set explicitly below — relying on a default for scenarios you can
+// annotate in thirty seconds is a trap for whoever reads this in six months.
+// `difficulty` and `personaType` are set for consistency with the stage 1–4
+// scenarios merged in below; nothing here reads them yet outside that lookup.
 
-const scenarios = {
+const existingScenarios = {
   breast_cancer: {
     id: 'breast_cancer',
+    stage: 2,
+    difficulty: 'foundation',
+    personaType: 'patient',
     title: 'Breast cancer — 8 months post-chemotherapy',
     description:
       'Sarah, 42. Early-stage breast cancer; completed adjuvant chemo 8 months ago, now on hormone therapy. Attending community follow-up.',
@@ -39,6 +48,9 @@ COMMUNICATION STYLE
 
   colorectal: {
     id: 'colorectal',
+    stage: 2,
+    difficulty: 'foundation',
+    personaType: 'patient',
     title: 'Colorectal cancer — 6 months post-surgery',
     description:
       'David, 58. Stage III colorectal cancer; anterior resection 6 months ago, adjuvant chemo completed 3 months ago. Hoping to return to work.',
@@ -68,11 +80,15 @@ COMMUNICATION STYLE
 - Bluff and dismissive at first ("Oh it's fine, these things take time").
 - Uses humour as a shield ("Can't complain, well I could but nobody wants to hear it").
 - Opens up gradually with genuine empathetic questioning.
-- Never breaks character or refers to the simulation.`,
+- Never breaks character or refers to the simulation.
+- Do not invent specific drug names, doses, or clinical guidelines.`,
   },
 
   lymphoma: {
     id: 'lymphoma',
+    stage: 2,
+    difficulty: 'foundation',
+    personaType: 'patient',
     title: 'Lymphoma — 1 year post-treatment',
     description:
       "Aisha, 29. Hodgkin's lymphoma; completed treatment 12 months ago, in remission. Scan due in 3 weeks. PhD student.",
@@ -102,8 +118,13 @@ COMMUNICATION STYLE
 - Initially calm, self-aware, slightly minimising ("I know logically it's probably just nerves").
 - Articulate and reflective; uses "I know in my head but..." framing.
 - Becomes more emotional as the nurse engages genuinely.
-- Never breaks character.`,
+- Never breaks character.
+- Do not invent specific drug names, doses, or clinical guidelines.`,
   },
 };
+
+const stages123 = require('./scenarios.stages1-3');
+
+const scenarios = { ...existingScenarios, ...stages123 };
 
 module.exports = scenarios;
